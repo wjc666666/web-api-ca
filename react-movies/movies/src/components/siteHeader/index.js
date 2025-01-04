@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -12,6 +12,9 @@ import { styled } from '@mui/material/styles';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
+// 导入 AuthContext
+import { AuthContext } from "../../contexts/AuthContext";
+
 const Offset = styled('div')(({ theme }) => theme.mixins.toolbar);
 
 const SiteHeader = () => {
@@ -23,6 +26,10 @@ const SiteHeader = () => {
   
   const navigate = useNavigate();
 
+  // 从 AuthContext 获取认证状态和登出函数
+  const { auth, logoutUser } = useContext(AuthContext);
+
+  // 定义公共菜单选项
   const menuOptions = [
     { label: "Home", path: "/" },
     { label: "Favorites", path: "/movies/favorites" },
@@ -31,8 +38,20 @@ const SiteHeader = () => {
     { label: "Popular", path: "/popular" },  
   ];
 
+  // 定义认证后显示的菜单选项
+  const authMenuOptions = [
+    { label: "Dashboard", path: "/dashboard" },
+    { label: "Logout", path: "/logout" },
+  ];
+
+  // 处理菜单选项的选择
   const handleMenuSelect = (pageURL) => {
-    navigate(pageURL, { replace: true });
+    if (pageURL === "/logout") {
+      logoutUser(); // 调用登出函数
+      navigate("/login");
+    } else {
+      navigate(pageURL, { replace: true });
+    }
     setAnchorEl(null); 
   };
 
@@ -50,55 +69,105 @@ const SiteHeader = () => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             All you ever wanted to know about Movies!
           </Typography>
-            {isMobile ? (
-              <>
-                <IconButton
-                  aria-label="menu"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleMenu}
-                  color="inherit"
-                >
-                  <MenuIcon />
-                </IconButton>
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  keepMounted
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  open={open}
-                  onClose={() => setAnchorEl(null)}
-                >
-                  {menuOptions.map((opt) => (
+          {isMobile ? (
+            <>
+              <IconButton
+                aria-label="menu"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+              >
+                <MenuIcon />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+              >
+                {menuOptions.map((opt) => (
+                  <MenuItem
+                    key={opt.label}
+                    onClick={() => handleMenuSelect(opt.path)}
+                  >
+                    {opt.label}
+                  </MenuItem>
+                ))}
+                {auth.isAuthenticated ? (
+                  authMenuOptions.map((opt) => (
                     <MenuItem
                       key={opt.label}
                       onClick={() => handleMenuSelect(opt.path)}
                     >
                       {opt.label}
                     </MenuItem>
-                  ))}
-                </Menu>
-              </>
-            ) : (
-              <>
-                {menuOptions.map((opt) => (
+                  ))
+                ) : (
+                  <>
+                    <MenuItem onClick={() => handleMenuSelect("/login")}>
+                      Login
+                    </MenuItem>
+                    <MenuItem onClick={() => handleMenuSelect("/register")}>
+                      Register
+                    </MenuItem>
+                  </>
+                )}
+              </Menu>
+            </>
+          ) : (
+            <>
+              {menuOptions.map((opt) => (
+                <Button
+                  key={opt.label}
+                  color="inherit"
+                  onClick={() => handleMenuSelect(opt.path)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+              {auth.isAuthenticated ? (
+                <>
                   <Button
-                    key={opt.label}
                     color="inherit"
-                    onClick={() => handleMenuSelect(opt.path)}
+                    onClick={() => handleMenuSelect("/dashboard")}
                   >
-                    {opt.label}
+                    Dashboard
                   </Button>
-                ))}
-              </>
-            )}
+                  <Button
+                    color="inherit"
+                    onClick={() => handleMenuSelect("/logout")}
+                  >
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    color="inherit"
+                    onClick={() => handleMenuSelect("/login")}
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    color="inherit"
+                    onClick={() => handleMenuSelect("/register")}
+                  >
+                    Register
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </Toolbar>
       </AppBar>
       <Offset />

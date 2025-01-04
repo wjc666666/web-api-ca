@@ -1,128 +1,153 @@
 import express from 'express';
-import User from './userModel';
+import User from './userModel.js';
 import jwt from 'jsonwebtoken';
+import authenticate from '../../authenticate/index.js';
+const router = express.Router();
 
-const router = express.Router(); // eslint-disable-line
-
+/**
+ * Validate password strength.
+ * Password must be at least 8 characters long and include at least one letter, one number, and one special character.
+ * @param {string} password 
+ * @returns {boolean}
+ */
 const validatePassword = (password) => {
     const regex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
     return regex.test(password);
 };
 
-// Get all users
-router.get('/', async (req, res) => {
-    const users = await User.find();
-    res.status(200).json(users);
+/**
+ * @route GET /api/users/
+ * @desc Get all users (protected)
+ */
+router.get('/', authenticate, async (req, res) => {
+    try {
+        const users = await User.find().select('-password'); // Exclude password
+        res.status(200).json({ success: true, data: users });
+    } catch (error) {
+        res.status(500).json({ success: false, msg: 'Internal Server Error', error: error.message });
+    }
 });
 
-// register(Create)/Authenticate User
-router.post('/', async (req, res) => {
+/**
+ * @route POST /api/users/register
+ * @desc Register a new user
+ */
+router.post('/register', async (req, res) => {
     try {
-        if (!req.body.username || !req.body.password) {
+        const { username, password } = req.body;
+
+        // Check if username and password are provided
+        if (!username || !password) {
             return res.status(400).json({
                 code: 400,
-                msg: 'Username and password are required.', // [修改内容] 返回错误信息
+                msg: 'Username and password are required.',
             });
         }
 
-        if (req.query.action === 'register') {
-            const { username, password } = req.body;
-
-            if (!validatePassword(password)) {
-                return res.status(400).json({
-                    code: 400,
-                    msg: 'Password must be at least 8 characters long and include at least one letter, one number, and one special character.',
-                });
-            }
-
-            const existingUser = await User.findOne({ username });
-            if (existingUser) {
-                return res.status(400).json({
-                    code: 400,
-                    msg: 'Username is already taken.',
-                });
-            }
-
-            await User.create(req.body);
-            res.status(201).json({
-                code: 201,
-                msg: 'Successful created new user.',
-            });
-        } else {
-            const { username, password } = req.body;
-
-            const user = await User.findOne({ username });
-            if (!user) {
-                return res.status(401).json({ code: 401, msg: 'Authentication failed' });
-            }
-
-            const isMatch = await user.comparePassword(password);
-            if (!isMatch) {
-                return res.status(401).json({ code: 401, msg: 'Authentication failed. Wrong password.' });
-            }
-
-            const token = jwt.sign({ username: user.username }, process.env.SECRET);
-            res.status(200).json({
-                code: 200,
-                msg: 'Authentication Successful',
-                token: 'BEARER ' + token,
+        // Validate password strength
+        if (!validatePassword(password)) {
+            return res.status(400).json({
+                code: 400,
+                msg: 'Password must be at least 8 characters long and include at least one letter, one number, and one special character.',
             });
         }
+
+        // Check if username is already taken
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({
+                code: 400,
+                msg: 'Username is already taken.',
+            });
+        }
+
+        // Create new user
+        await User.create({ username, password });
+        res.status(201).json({
+            code: 201,
+            msg: 'Successfully created new user.',
+        });
     } catch (error) {
         res.status(500).json({ code: 500, msg: 'Internal Server Error', error: error.message });
     }
 });
 
-// Update a user
-router.put('/:id', async (req, res) => {
-    if (req.body._id) delete req.body._id;
-    const result = await User.updateOne({
-        _id: req.params.id,
-    }, req.body);
-    if (result.matchedCount) {
-        res.status(200).json({ code: 200, msg: 'User Updated Sucessfully' });
-    } else {
-        res.status(404).json({ code: 404, msg: 'Unable to Update User' });
+/**
+ * @route POST /api/users/login
+ * @desc Authenticate user and return JWT token
+ */
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Check if username and password are provided
+        if (!username || !password) {
+            return res.status(400).json({
+                code: 400,
+                msg: 'Username and password are required.',
+            });
+        }
+
+        // Find user by username
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(401).json({ code: 401, msg: 'Authentication failed. User not found.' });
+        }
+
+        // Check if password matches
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(401).json({ code: 401, msg: 'Authentication failed. Wrong password.' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ username: user.username, id: user._id }, process.env.SECRET, { expiresIn: '1d' });
+        res.status(200).json({
+            code: 200,
+            msg: 'Authentication Successful',
+            token: 'Bearer ' + token,
+        });
+    } catch (error) {
+        res.status(500).json({ code: 500, msg: 'Internal Server Error', error: error.message });
     }
 });
 
-async function registerUser(req, res) {
-    const { username, password } = req.body;
-
-    if (!validatePassword(password)) {
-        return res.status(400).json({
-            success: false,
-            msg: 'Password must be at least 8 characters long and include at least one letter, one number, and one special character.',
-        });
+/**
+ * @route GET /api/users/me
+ * @desc Get current authenticated user
+ */
+router.get('/me', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        if (user) {
+            res.status(200).json({ success: true, data: user });
+        } else {
+            res.status(404).json({ success: false, msg: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, msg: 'Internal Server Error', error: error.message });
     }
+});
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-        return res.status(400).json({
-            success: false,
-            msg: 'Username is already taken.',
-        });
+/**
+ * @route PUT /api/users/:id
+ * @desc Update user information (protected)
+ */
+router.put('/:id', authenticate, async (req, res) => {
+    if (req.body._id) delete req.body._id;
+    try {
+        const result = await User.updateOne(
+            { _id: req.params.id },
+            req.body
+        );
+        if (result.matchedCount) {
+            res.status(200).json({ code: 200, msg: 'User Updated Successfully' });
+        } else {
+            res.status(404).json({ code: 404, msg: 'Unable to Update User' });
+        }
+    } catch (error) {
+        res.status(500).json({ code: 500, msg: 'Internal Server Error', error: error.message });
     }
-
-    await User.create(req.body);
-    res.status(201).json({ success: true, msg: 'User successfully created.' });
-}
-
-async function authenticateUser(req, res) {
-    const { username, password } = req.body;
-
-    const user = await User.findOne({ username });
-    if (!user) {
-        return res.status(401).json({ success: false, msg: 'Authentication failed. User not found.' });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (isMatch) {
-        const token = jwt.sign({ username: user.username }, process.env.SECRET);
-        res.status(200).json({ success: true, token: 'BEARER ' + token });
-    } else {
-        res.status(401).json({ success: false, msg: 'Wrong password.' });
-    }
-}
+});
 
 export default router;

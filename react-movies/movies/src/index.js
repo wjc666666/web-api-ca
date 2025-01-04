@@ -17,6 +17,13 @@ import RecommendationsPage from "./pages/RecommendationsPage";
 import CreditsPage from "./pages/CreditsPage";
 import ActorPage from './pages/ActorPage'; 
 
+// 新增的组件
+import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthContextProvider from './contexts/AuthContext';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -30,26 +37,39 @@ const queryClient = new QueryClient({
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <SiteHeader />
-        <MoviesContextProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/movies/favorites" element={<FavoriteMoviesPage />} />
-            <Route path="/reviews/:id" element={<MovieReviewPage />} />
-            <Route path="/movies/:id" element={<MoviePage />} />
-            <Route path="/reviews/form" element={<AddMovieReviewPage />} />
-            <Route path="/upcoming" element={<UpcomingMovies />} />
-            <Route path="/trending" element={<TrendingMovies />} />
-            <Route path="/popular" element={<PopularMovies />} />
-            <Route path="/movie/:id/recommendations" element={<RecommendationsPage />} />
-            <Route path="/movie/:id/credits" element={<CreditsPage />} />
-            <Route path="/actor/:id" element={<ActorPage />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </MoviesContextProvider>
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <AuthContextProvider>
+        <BrowserRouter>
+          <SiteHeader />
+          <MoviesContextProvider>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/movies/favorites" element={<FavoriteMoviesPage />} />
+              <Route path="/reviews/:id" element={<MovieReviewPage />} />
+              <Route path="/movies/:id" element={<MoviePage />} />
+              <Route path="/reviews/form" element={<AddMovieReviewPage />} />
+              <Route path="/upcoming" element={<UpcomingMovies />} />
+              <Route path="/trending" element={<TrendingMovies />} />
+              <Route path="/popular" element={<PopularMovies />} />
+              <Route path="/movie/:id/recommendations" element={<RecommendationsPage />} />
+              <Route path="/movie/:id/credits" element={<CreditsPage />} />
+              <Route path="/actor/:id" element={<ActorPage />} />
+              
+              {/* 新增的认证路由 */}
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* 捕获所有未定义路由 */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </MoviesContextProvider>
+        </BrowserRouter>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </AuthContextProvider>
     </QueryClientProvider>
   );
 };
