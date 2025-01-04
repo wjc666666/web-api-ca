@@ -1,19 +1,64 @@
-import React, { useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
+import { fetchUserFavorites, fetchUserReviews } from '../services/moviesService';
+import MovieCard from '../components/movieCard';
+import ReviewCard from '../components/ReviewCard'; 
+import Spinner from '../components/spinner';
 
-/**
- * DashboardPage component to display user-specific data.
- */
 const DashboardPage = () => {
   const { auth } = useContext(AuthContext);
+  const [favorites, setFavorites] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (auth.loading) return <p>Loading...</p>;
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const [favData, reviewData] = await Promise.all([
+          fetchUserFavorites(),
+          fetchUserReviews(),
+        ]);
+        console.log('Favorites:', favData);
+        console.log('Reviews:', reviewData);
+        setFavorites(favData);
+        setReviews(reviewData);
+      } catch (err) {
+        console.log('Error fetching dashboard data:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch dashboard data.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    getData();
+  }, []);
+
+  console.log('Auth:', auth); // 调试用
+
+  if (loading) return <Spinner />;
+  if (error) return <div>Error: {error}</div>;
 
   return (
-    <div>
-      <h2>Welcome, {auth.user.username}!</h2>
-      <p>Username: {auth.user.username}</p>
-      {/* 在这里添加更多用户特定的数据，例如收藏的电影 */}
+    <div style={{ padding: "20px" }}>
+      <h2>Dashboard</h2>
+      
+      <section>
+        <h3>Your Favorite Movies</h3>
+        <div className="movie-list">
+          {favorites.map((movie) => (
+            <MovieCard key={movie._id} movie={movie} />
+          ))}
+        </div>
+      </section>
+      
+      <section>
+        <h3>Your Reviews</h3>
+        <div className="review-list">
+          {reviews.map((review) => (
+            <ReviewCard key={review._id} review={review} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 };
