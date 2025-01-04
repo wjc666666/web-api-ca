@@ -61,8 +61,8 @@ const App = () => {
               <Route path="/movie/:id/credits" element={<CreditsPage />} />
               <Route path="/actor/:id" element={<ActorPage />} />
               
-              {/* 受保护的路由 */}
-              <Route path="/dashboard" element={
+    {/* 受保护的路由 */}
+    <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <DashboardPage />
                 </ProtectedRoute>
@@ -70,6 +70,21 @@ const App = () => {
               <Route path="/home" element={
                 <ProtectedRoute>
                   <HomePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/upcoming" element={
+                <ProtectedRoute>
+                  <UpcomingMovies />
+                </ProtectedRoute>
+              } />
+              <Route path="/trending" element={
+                <ProtectedRoute>
+                  <TrendingMovies />
+                </ProtectedRoute>
+              } />
+              <Route path="/popular" element={
+                <ProtectedRoute>
+                  <PopularMovies />
                 </ProtectedRoute>
               } />
               
