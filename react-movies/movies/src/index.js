@@ -41,8 +41,15 @@ const App = () => {
         <BrowserRouter>
           <SiteHeader />
           <MoviesContextProvider>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
+          <Routes>
+              {/* 根路径指向 LoginPage */}
+              <Route path="/" element={<LoginPage />} />
+              
+              {/* 认证相关路由 */}
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* 公共路由 */}
               <Route path="/movies/favorites" element={<FavoriteMoviesPage />} />
               <Route path="/reviews/:id" element={<MovieReviewPage />} />
               <Route path="/movies/:id" element={<MoviePage />} />
@@ -54,12 +61,15 @@ const App = () => {
               <Route path="/movie/:id/credits" element={<CreditsPage />} />
               <Route path="/actor/:id" element={<ActorPage />} />
               
-              {/* 新增的认证路由 */}
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/login" element={<LoginPage />} />
+              {/* 受保护的路由 */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/home" element={
+                <ProtectedRoute>
+                  <HomePage />
                 </ProtectedRoute>
               } />
               
