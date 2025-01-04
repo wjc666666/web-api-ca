@@ -41,7 +41,7 @@ const App = () => {
         <BrowserRouter>
           <SiteHeader />
           <MoviesContextProvider>
-          <Routes>
+            <Routes>
               {/* 根路径指向 LoginPage */}
               <Route path="/" element={<LoginPage />} />
               
@@ -54,15 +54,12 @@ const App = () => {
               <Route path="/reviews/:id" element={<MovieReviewPage />} />
               <Route path="/movies/:id" element={<MoviePage />} />
               <Route path="/reviews/form" element={<AddMovieReviewPage />} />
-              <Route path="/upcoming" element={<UpcomingMovies />} />
-              <Route path="/trending" element={<TrendingMovies />} />
-              <Route path="/popular" element={<PopularMovies />} />
               <Route path="/movie/:id/recommendations" element={<RecommendationsPage />} />
               <Route path="/movie/:id/credits" element={<CreditsPage />} />
               <Route path="/actor/:id" element={<ActorPage />} />
               
-    {/* 受保护的路由 */}
-    <Route path="/dashboard" element={
+              {/* 受保护的路由 */}
+              <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <DashboardPage />
                 </ProtectedRoute>
