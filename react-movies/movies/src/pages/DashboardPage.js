@@ -7,6 +7,7 @@ import ReviewCard from '../components/ReviewCard';
 import Spinner from '../components/spinner';
 import RemoveFromFavoritesIcon from "../components/cardIcons/removeFromFavorites";
 import WriteReview from "../components/cardIcons/writeReview";
+import Grid from "@mui/material/Grid";
 
 const DashboardPage = () => {
   const { favorites, myReviews } = useContext(MoviesContext);
@@ -35,29 +36,31 @@ const DashboardPage = () => {
       
       <section>
         <h3>Your Favorite Movies</h3>
-        <div className="movie-list">
+        <Grid container spacing={2}>
           {movies.map(movie => (
-            <MovieCard 
-              key={movie.id} 
-              movie={movie} 
-              action={(movie) => (
-                <>
-                  <RemoveFromFavoritesIcon movie={movie} />
-                  <WriteReview movie={movie} />
-                </>
-              )} 
-            />
+            <Grid item key={movie.id} xs={12} sm={6} md={4} lg={3}>
+              <MovieCard 
+                movie={movie} 
+                action={(movie) => (
+                  <>
+                    <RemoveFromFavoritesIcon movie={movie} />
+                    <WriteReview movie={movie} />
+                  </>
+                )} 
+              />
+              <div style={{ marginTop: "10px" }}>
+                <h4>Your Reviews:</h4>
+                {myReviews[movie.id] && myReviews[movie.id].length > 0 ? (
+                  myReviews[movie.id].map(review => (
+                    <ReviewCard key={review._id} review={review} />
+                  ))
+                ) : (
+                  <p>No reviews yet.</p>
+                )}
+              </div>
+            </Grid>
           ))}
-        </div>
-      </section>
-      
-      <section>
-        <h3>Your Reviews</h3>
-        <div className="review-list">
-          {Object.values(myReviews).map((review) => (
-            <ReviewCard key={review._id} review={review} />
-          ))}
-        </div>
+        </Grid>
       </section>
     </div>
   );

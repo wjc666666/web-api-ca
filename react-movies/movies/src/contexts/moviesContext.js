@@ -1,5 +1,11 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { fetchUserFavorites, addFavorite, removeFavorite, fetchUserReviews } from '../services/moviesService';
+import {
+  fetchUserFavorites,
+  addFavorite,
+  removeFavorite,
+  addReview as addReviewAPI,
+  fetchUserReviews,
+} from '../services/moviesService';
 
 export const MoviesContext = createContext(null);
 
@@ -8,7 +14,7 @@ export const MoviesContext = createContext(null);
  */
 const MoviesContextProvider = (props) => {
   const [favorites, setFavorites] = useState([]); // 收藏数组，包含后端返回的收藏对象
-  const [myReviews, setMyReviews] = useState({}); // 初始化为一个空对象
+  const [myReviews, setMyReviews] = useState({}); // 初始化为一个空对象，键为 movieId，值为评论数组
   const [mustWatch, setMustWatch] = useState([]); // “必看”列表
 
   // 初始化收藏数据
@@ -29,9 +35,12 @@ const MoviesContextProvider = (props) => {
     const getReviews = async () => {
       try {
         const reviewData = await fetchUserReviews();
-        // 将评论数组转换为对象，键为 movieId
+        // 将评论数组转换为对象，键为 movieId，值为评论数组
         const reviewsObject = reviewData.reduce((acc, review) => {
-          acc[review.movieId] = review;
+          if (!acc[review.movieId]) {
+            acc[review.movieId] = [];
+          }
+          acc[review.movieId].push(review);
           return acc;
         }, {});
         setMyReviews(reviewsObject);
@@ -77,16 +86,25 @@ const MoviesContextProvider = (props) => {
   /**
    * 添加评论
    * @param {Object} movie - 电影对象
-   * @param {Object} review - 评论对象
+   * @param {Object} review - 评论对象 { content, rating }
    */
   const addReview = async (movie, review) => {
     try {
-      // 假设后端 API 已经添加了评论，并返回了新的评论对象
-      const addedReview = await addReview(movie.id, review.content, review.rating);
-      setMyReviews(prevReviews => ({ ...prevReviews, [movie.id]: addedReview }));
+      // 调用后端API添加评论
+      const addedReview = await addReviewAPI(movie.id, review.content, review.rating);
+      
+      // 更新myReviews状态
+      setMyReviews(prevReviews => {
+        const existingReviews = prevReviews[movie.id] || [];
+        return {
+          ...prevReviews,
+          [movie.id]: [...existingReviews, addedReview],
+        };
+      });
     } catch (error) {
       console.error("Failed to add review:", error);
       // 可以在这里添加用户通知，例如使用 Snackbar 显示错误消息
+      throw error; // 让调用者知道发生了错误
     }
   };
 
@@ -109,7 +127,7 @@ const MoviesContextProvider = (props) => {
         addToFavorites,
         removeFromFavorites,
         addReview,
-        myReviews, // 确保将 myReviews 包含在上下文中
+        myReviews, // 包含所有评论，键为 movieId，值为评论数组
         mustWatch,
         addToMustWatch,
       }}

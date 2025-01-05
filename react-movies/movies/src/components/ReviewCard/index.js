@@ -13,16 +13,16 @@ const ReviewCard = ({ review }) => {
       }}
     >
       <CardContent>
-        <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold' }}>
-          Review By: {review.user?.username || 'Unknown'}
+        <Typography variant="h6" component="h4" sx={{ fontWeight: 'bold' }}>
+          Rating: {review.rating}/10
         </Typography>
 
-        <Typography variant="h6" component="p" sx={{ marginTop: 1 }}>
+        <Typography variant="body1" component="p" sx={{ marginTop: 1 }}>
           {review.content}
         </Typography>
 
-        <Typography variant="body2" color="textSecondary" sx={{ marginTop: 1 }}>
-          Rating: {review.rating}/10
+        <Typography variant="caption" color="textSecondary" sx={{ marginTop: 1 }}>
+          Submitted on: {new Date(review.createdAt).toLocaleDateString()}
         </Typography>
       </CardContent>
     </Card>
