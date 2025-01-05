@@ -3,48 +3,46 @@ import PageTemplate from "../components/templateMovieListPage";
 import { MoviesContext } from "../contexts/moviesContext";
 import { useQueries } from "react-query";
 import { getMovie } from "../api/tmdb-api";
-import Spinner from '../components/spinner'
-import RemoveFromFavorites from "../components/cardIcons/removeFromFavorites";
+import Spinner from '../components/spinner';
+import RemoveFromFavoritesIcon from "../components/cardIcons/removeFromFavorites";
 import WriteReview from "../components/cardIcons/writeReview";
 
 const FavoriteMoviesPage = () => {
-  const {favorites: movieIds } = useContext(MoviesContext);
+  const { favorites } = useContext(MoviesContext);
 
-  // Create an array of queries and run in parallel.
+  // 创建一组查询并行获取每部收藏电影的详细信息
   const favoriteMovieQueries = useQueries(
-    movieIds.map((movieId) => {
-      return {
-        queryKey: ["movie", { id: movieId }],
-        queryFn: getMovie,
-      };
-    })
+    favorites.map((fav) => ({
+      queryKey: ["movie", { id: fav.movieId }],
+      queryFn: getMovie,
+    }))
   );
-  // Check if any of the parallel queries is still loading.
-  const isLoading = favoriteMovieQueries.find((m) => m.isLoading === true);
+
+  // 检查是否有任何查询仍在加载
+  const isLoading = favoriteMovieQueries.some(query => query.isLoading);
 
   if (isLoading) {
     return <Spinner />;
   }
 
-  const movies = favoriteMovieQueries.map((q) => {
-    q.data.genre_ids = q.data.genres.map(g => g.id)
-    return q.data
+  // 提取电影数据
+  const movies = favoriteMovieQueries.map((query, index) => {
+    const movie = query.data;
+    // 将后端的收藏 ID 添加到电影对象中，以便后续删除操作
+    movie.favoriteId = favorites[index]._id;
+    return movie;
   });
-
-  const toDo = () => true;
 
   return (
     <PageTemplate
       title="Favorite Movies"
       movies={movies}
-      action={(movie) => {
-        return (
-          <>
-            <RemoveFromFavorites movie={movie} />
-            <WriteReview movie={movie} />
-          </>
-        );
-      }}
+      action={(movie) => (
+        <>
+          <RemoveFromFavoritesIcon movie={movie} />
+          <WriteReview movie={movie} />
+        </>
+      )}
     />
   );
 };

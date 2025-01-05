@@ -107,12 +107,11 @@ export const fetchMovieReviews = async (movieId) => {
 export const fetchUserReviews = async () => {
   try {
     const response = await axios.get('/reviews/me');
-    return response.data;
+    return response.data; 
   } catch (error) {
     throw error.response?.data || 'Failed to fetch your reviews.';
   }
 };
-
 /**
  * 获取用户偏好
  * @returns {Promise<Object>}

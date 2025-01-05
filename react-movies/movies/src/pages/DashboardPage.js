@@ -1,42 +1,33 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
-import { fetchUserFavorites, fetchUserReviews } from '../services/moviesService';
+import React, { useContext } from 'react';
+import { MoviesContext } from '../contexts/moviesContext';
+import { useQueries } from 'react-query';
+import { getMovie } from '../api/tmdb-api';
 import MovieCard from '../components/movieCard';
-import ReviewCard from '../components/ReviewCard'; 
+import ReviewCard from '../components/ReviewCard';
 import Spinner from '../components/spinner';
+import RemoveFromFavoritesIcon from "../components/cardIcons/removeFromFavorites";
+import WriteReview from "../components/cardIcons/writeReview";
 
 const DashboardPage = () => {
-  const { auth } = useContext(AuthContext);
-  const [favorites, setFavorites] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { favorites, myReviews } = useContext(MoviesContext);
 
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        const [favData, reviewData] = await Promise.all([
-          fetchUserFavorites(),
-          fetchUserReviews(),
-        ]);
-        console.log('Favorites:', favData);
-        console.log('Reviews:', reviewData);
-        setFavorites(favData);
-        setReviews(reviewData);
-      } catch (err) {
-        console.log('Error fetching dashboard data:', err);
-        setError(err.response?.data?.message || err.message || 'Failed to fetch dashboard data.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
-  }, []);
+  // 使用 useQueries 并行获取每个收藏电影的详细信息
+  const favoriteMovieQueries = useQueries(
+    favorites.map((fav) => ({
+      queryKey: ["movie", { id: fav.movieId }],
+      queryFn: () => getMovie({ queryKey: ["movie", { id: fav.movieId }] }),
+    }))
+  );
 
-  console.log('Auth:', auth); // 调试用
+  // 检查是否有任何查询仍在加载或有错误
+  const isLoading = favoriteMovieQueries.some(q => q.isLoading);
+  const isError = favoriteMovieQueries.some(q => q.isError);
+  
+  if (isLoading) return <Spinner />;
+  if (isError) return <div>Error loading favorite movies.</div>;
 
-  if (loading) return <Spinner />;
-  if (error) return <div>Error: {error}</div>;
+  // 提取电影数据
+  const movies = favoriteMovieQueries.map(q => q.data);
 
   return (
     <div style={{ padding: "20px" }}>
@@ -45,8 +36,17 @@ const DashboardPage = () => {
       <section>
         <h3>Your Favorite Movies</h3>
         <div className="movie-list">
-          {favorites.map((movie) => (
-            <MovieCard key={movie._id} movie={movie} />
+          {movies.map(movie => (
+            <MovieCard 
+              key={movie.id} 
+              movie={movie} 
+              action={(movie) => (
+                <>
+                  <RemoveFromFavoritesIcon movie={movie} />
+                  <WriteReview movie={movie} />
+                </>
+              )} 
+            />
           ))}
         </div>
       </section>
@@ -54,7 +54,7 @@ const DashboardPage = () => {
       <section>
         <h3>Your Reviews</h3>
         <div className="review-list">
-          {reviews.map((review) => (
+          {Object.values(myReviews).map((review) => (
             <ReviewCard key={review._id} review={review} />
           ))}
         </div>

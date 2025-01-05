@@ -1,72 +1,53 @@
-import React, { useContext } from "react";
+import React from "react";
+import { Link } from "react-router-dom";
 import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
-import CardHeader from "@mui/material/CardHeader";
-import Button from "@mui/material/Button";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import CalendarIcon from "@mui/icons-material/CalendarTodayTwoTone";
 import StarRateIcon from "@mui/icons-material/StarRate";
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
-import IconButton from "@mui/material/IconButton";
-import Grid from "@mui/material/Grid";
-import img from '../images/film-poster-placeholder.png';
-import { Link } from "react-router-dom";
-import { MoviesContext } from "../../contexts/moviesContext";
 
-export default function MovieCard({ movie, action = () => null }) {
-  const { addToFavorites, addToMustWatch } = useContext(MoviesContext);
-
-  const handleAddToPlaylist = (e) => {
-    e.preventDefault();
-    addToMustWatch(movie); 
-  };
-
+const MovieCard = ({ movie, action = () => null }) => {
   return (
     <Card>
-      <CardHeader
-        title={
-          <Typography variant="h5" component="p">
-            {movie.title}
-          </Typography>
-        }
-      />
+      <CardContent>
+        <Typography variant="h5" component="div">
+          {movie.title}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          <CalendarIcon fontSize="small" /> {movie.release_date}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          <StarRateIcon fontSize="small" /> {movie.vote_average}
+        </Typography>
+      </CardContent>
       <CardMedia
-        sx={{ height: 500 }}
+        component="img"
+        height="500"
         image={
           movie.poster_path
             ? `https://image.tmdb.org/t/p/w500/${movie.poster_path}`
-            : img
+            : 'path/to/placeholder/image.png' // 替换为您的占位符图片路径
         }
+        alt={movie.title}
       />
-      <CardContent>
-        <Grid container spacing={1}>
-          <Grid item xs={6}>
-            <Typography variant="h6" component="p">
-              <CalendarIcon fontSize="small" />
-              {movie.release_date}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="h6" component="p">
-              <StarRateIcon fontSize="small" />
-              {"  "} {movie.vote_average}
-            </Typography>
-          </Grid>
-        </Grid>
-      </CardContent>
-      <CardActions disableSpacing>
+      <CardActions>
         {action(movie)}
-        <IconButton onClick={handleAddToPlaylist}>
+        <IconButton>
           <PlaylistAddIcon />
         </IconButton>
         <Link to={`/movies/${movie.id}`}>
-          <Button variant="outlined" size="medium" color="primary">
-            More Info ...
+          <Button variant="outlined" size="small" color="primary">
+            More Info
           </Button>
         </Link>
       </CardActions>
     </Card>
   );
-}
+};
+
+export default MovieCard;
